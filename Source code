@@ -1,0 +1,112 @@
+```html
+//index.html
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<title>Chat application</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Live Chat</h1>
+  <form class="chat-form">
+    <label class="chat-label" for="chat-input">
+      Enter a message:
+    </label>
+    <input autocomplete="off" placeholder="Enter a message" type="text" class="chat-input" id="chat-input">
+    <input type="submit" class="chat-submit" value="enter">
+  </form>
+  <div class="chat-dump"></div>
+  <script src="socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+```
+```css
+/*style.css*/
+*{
+  padding: 0px;
+  margin: 0px;
+  font-family: 'Fira Code';
+  background: #94a4a6;
+}
+.chat-form{
+  position: absolute;
+  right: 20px;
+  bottom: 0px;
+  background: blue;
+  width: 300px;
+  border-radius: 5px 5px 0px 0px;
+}
+.chat-label{
+  position: fixed;
+  bottom: 0px;
+  height: 45px;
+  width: inherit;
+}
+ 
+.chat-input{
+  position: fixed;
+  bottom: 0px;
+  height: 45px;
+  width: inherit;
+}
+.chat-dump{
+  position: fixed;
+  bottom: 0px;
+  height: 45px;
+  width: inherit;
+}
+
+.chat-submit {
+  width: 50px;
+  height: 35px;
+  border: solid 1px #444;
+}
+ 
+```js
+//index.js
+const express = require('express')
+const app = express()
+const server = require('http').createServer(app)
+const path = require('path')
+const io = require('socket.io')(server)
+app.use(
+  express.static( path.join(__dirname, '/static') )
+)
+io.on('connection', socket => {
+  console.log('Some client connected')
+  socket.on('chat', message => {
+    io.emit('chat', {message, id: socket.id})
+  })
+})
+const port = process.env.PORT || 3000
+server.listen(port, ()=> {
+  console.log('listening on: ', port)
+})
+```
+```js
+//app.js
+const socket = io()
+const chat = document.querySelector('.chat-form')
+const chatInput = document.querySelector('.chat-input')
+chat.addEventListener('submit', e => {
+  e.preventDefault()
+  socket.emit('chat', chatInput.value)
+  chatInput.value = ''
+})
+const chatDump = document.querySelector('.chat-dump')
+const render = ({message, id}) => {
+  const div = document.createElement('div')
+  div.classList.add('chat-message')
+  if (id === socket.id) {  // broadcasted chat is from this client
+    div.classList.add('chat-message--user')
+  }
+  div.innerText = message // insert message into new div
+  chatDump.appendChild(div)
+}
+socket.on('chat', data => {
+  render(data)
+})
+```
